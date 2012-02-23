@@ -1,11 +1,22 @@
-;; go-back.el
-;; ------------------------------------------
-;; author: Andreas Raster <lazor@affenbande.org>
-;;
+;; go-back.el -- continue working on files from where you saved
+;; Copyright (C) 2012 Andreas Raster <lazor@affenbande.org>
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 ;; loosely based on and inspired by point-stack.el by
 ;; matt harrison (matthewharrison@gmail.com)
 ;; dmitry gutov  (dgutov@yandex.ru)
-
 
 (defvar go-back-past '((nil (point-min) (point-min))))
 (make-variable-buffer-local 'go-back-past)
