@@ -18,6 +18,8 @@
 ;; matt harrison (matthewharrison@gmail.com)
 ;; dmitry gutov  (dgutov@yandex.ru)
 
+(require 'cl)
+
 (defvar go-back-past '((nil (point-min) (point-min))))
 (make-variable-buffer-local 'go-back-past)
 
@@ -32,7 +34,6 @@
 
 (defvar go-back-last-jump-cost 0)
 (make-variable-buffer-local 'go-back-last-jump-cost)
-
 
 (setq go-back-past '((nil (point-min) (point-min)))
       go-back-future '((nil (point-max) (point-max)))
