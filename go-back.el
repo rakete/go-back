@@ -286,8 +286,8 @@
                                          isearch-other-control-char)
                                         (undo-tree-undo
                                          undo-tree-redo)
-                                        (highlight-phrase)
-                                        (highlight-symbol-at-point)
+                                        ;;(highlight-phrase)
+                                        ;;(highlight-symbol-at-point)
                                         (highlight-symbol-prev
                                          highlight-symbol-jump
                                          highlight-symbol-next
@@ -360,25 +360,29 @@
          (triggered nil))
     (unless (or (eq tc 'go-back-next)
                 (eq tc 'go-back-prev)
-                (eq tc 'go-back-push))
+                (eq tc 'go-back-push)
+                (eq tc 'go-back-pre-command-trigger))
       ;; (loop for xs in go-back-cursor-commands
       ;;       until (when (some 'identity (mapcar (apply-partially 'eq tc) xs))
       ;;               (setq go-back-current (go-back-make-location))))
       (loop for ys in go-back-trigger-command-symbols
             until (when (some 'identity (mapcar (apply-partially 'eq tc) ys))
                     (setq triggered `(command ,ys))))
-      (when triggered
-        (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
-          (unless (or (eq lc 'go-back-next)
-                      (eq lc 'go-back-prev)
-                      (eq lc 'go-back-push))
-            (when (buffer-file-name (current-buffer))
-              (go-back-push)
-              )))))))
+      (if triggered
+          (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
+            (unless (or (eq lc 'go-back-next)
+                        (eq lc 'go-back-prev)
+                        (eq lc 'go-back-push))
+              (when (buffer-file-name (current-buffer))
+                (go-back-push))))
+        ;; (save-excursion
+        ;;   (save-restriction
+        ;;     (unless (go-back-ignore-line-p)
+        ;;       (print (go-back-make-location)))))
+        ))))
 
 
-(eval-after-load "go-back"
-  (add-hook 'pre-command-hook 'go-back-pre-command-trigger))
+(add-hook 'pre-command-hook 'go-back-pre-command-trigger)
 
 ;;(remove-hook 'pre-command-hook 'go-back-pre-command-trigger)
 
