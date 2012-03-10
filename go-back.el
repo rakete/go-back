@@ -57,7 +57,7 @@
 (defun go-back-previous-line ()
   (interactive)
   (unless (save-excursion (beginning-of-line) (bobp))
-    (previous-line-nomark)
+    (previous-line)
     (let ((direction 'up))
       (while (go-back-ignore-line-p)
         (when (save-excursion
@@ -65,14 +65,14 @@
                 (bobp))
           (setq direction 'down))
         (if (eq direction 'up)
-            (previous-line-nomark)
-          (next-line-nomark))
+            (previous-line)
+          (next-line))
         ))))
 
 (defun go-back-next-line ()
   (interactive)
   (unless (save-excursion (end-of-line) (eobp))
-    (next-line-nomark)
+    (next-line)
     (let ((direction 'down))
       (while (go-back-ignore-line-p)
         (when (save-excursion
@@ -80,8 +80,8 @@
                 (eobp))
           (setq direction 'up))
         (if (eq direction 'down)
-            (next-line-nomark)
-          (previous-line-nomark))
+            (next-line)
+          (previous-line))
         ))))
 
 (defun go-back-go (loc)
