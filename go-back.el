@@ -333,7 +333,7 @@
        (go-back-push loc :right)
        (setq go-back-current (car (last go-back-past)))
        )))
-  (go-back-dump-state)
+  ;;(go-back-dump-state)
   )
 
 (defun go-back-next ()
@@ -354,7 +354,7 @@
        (go-back-go go-back-current)
        )
       ))
-  (go-back-dump-state)
+  ;;(go-back-dump-state)
   )
 
 (setq go-back-trigger-command-symbols '((isearch-mode
@@ -457,13 +457,13 @@
                         (eq lc 'go-back-prev)
                         (eq lc 'go-back-push))
               (when (buffer-file-name (current-buffer))
-                (go-back-push))))
+                (go-back-push)
+                )))
         ;; (save-excursion
         ;;   (save-restriction
         ;;     (unless (go-back-ignore-line-p)
         ;;       (print (go-back-make-location)))))
         ))))
-
 
 (add-hook 'pre-command-hook 'go-back-pre-command-trigger)
 
