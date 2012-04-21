@@ -1,4 +1,4 @@
-;; go-back.el -- continue working on files from where you saved
+;; go-back.el -- just brings you back to where you were before
 ;; Copyright (C) 2012 Andreas Raster <lazor@affenbande.org>
 
 ;; This program is free software: you can redistribute it and/or modify
