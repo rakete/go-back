@@ -84,114 +84,109 @@
           (previous-line))
         ))))
 
-;; (defun go-back-go (loc)
-;;   (switch-to-buffer (or (nth 0 loc)
-;;                         (current-buffer)))
-;;   (set-window-start nil (eval (nth 2 loc)))
-;;   (let* ((p (eval (nth 1 loc)))
-;;          (re-left (regexp-quote (nth 3 loc)))
-;;          (re-right (regexp-quote (nth 4 loc))))
-;;     (if (and (not (null re-left))
-;;              (not (null re-right)))
-;;         (let ((m1 (save-excursion
-;;                     (unless (string-equal re-left "")
-;;                       (goto-char (point-min))
-;;                       (re-search-forward re-left nil t))))
-;;               (m2 (save-excursion
-;;                     (unless (string-equal re-right "")
-;;                       (goto-char (point-max))
-;;                       (re-search-backward re-right nil t))))
-;;               (m3 (save-excursion
-;;                     (unless (all (apply-partially 'eq ? ) (string-to-list re-left))
-;;                       (goto-char p)
-;;                       (goto-char (point-at-bol))
-;;                       (re-search-forward (car (reverse (split-string re-left " " t))) nil t))))
-;;               (m4 (save-excursion
-;;                     (unless (all (apply-partially 'eq ? ) (string-to-list re-right))
-;;                       (goto-char p)
-;;                       (goto-char (point-at-eol))
-;;                       (re-search-backward (car (reverse (split-string re-right " " t))) nil t)))))
-;;           (print `(,m1 ,m2 ,m3 ,m4))
-;;           (goto-char (or (car (sort (remove-if-not 'identity `(,m1 ,m2 ,m3 ,m4)) (lambda (a b) (< (abs (- p a)) (abs (- p b))))))
-;;                          p)))
-;;       (goto-char p))))
-
 (defun go-back-go (loc)
   (flet ((line-to-re (line)
-                     (let ((words (remove-if 'go-back-ignore-word-p
-                                             (split-string line " " t)))
-                           (res '()))
-                       (while words
-                         (cond ((null res)
-                                (add-to-list 'res (regexp-quote (concat (pop words) " "))))
-                               ((null (cdr words))
-                                (add-to-list 'res (regexp-quote (concat " " (pop words)))))
-                               (t
-                                (add-to-list 'res (regexp-quote (concat " " (pop words) " "))))))
-                       res)))
+                     (when line
+                       (let ((words (remove-if 'go-back-ignore-word-p
+                                               (split-string line " " t)))
+                             (res '()))
+                         (while words
+                           (cond ((null res)
+                                  (add-to-list 'res (regexp-quote (concat (pop words) " "))))
+                                 ((null (cdr words))
+                                  (add-to-list 'res (regexp-quote (concat " " (pop words)))))
+                                 (t
+                                  (add-to-list 'res (regexp-quote (concat " " (pop words) " "))))))
+                         res))))
     (switch-to-buffer (or (nth 0 loc)
                           (current-buffer)))
     (set-window-start nil (eval (nth 2 loc)))
     (let* ((p (eval (nth 1 loc)))
            (line-left (nth 3 loc))
            (line-right (nth 4 loc))
+           (re-left (regexp-quote line-left))
+           (re-right (regexp-quote line-right))
            (line-prev (nth 5 loc))
            (line-next (nth 6 loc))
            (words-1 (line-to-re (concat line-left line-right)))
            (words-2 (line-to-re line-prev))
            (words-3 (line-to-re line-next)))
-      ;; (print words-1)
-      ;; (print words-2)
-      ;; (print words-3)
-      (goto-char (or (save-excursion
-                       (goto-char p)
-                       (loop for w3 in words-3
-                             if (and (re-search-forward (regexp-quote w3) nil t)
-                                     (loop for w1 in words-1
-                                           if (string-match (regexp-quote w1)
-                                                            (save-excursion
-                                                              (go-back-previous-line)
-                                                              (buffer-substring (point-at-bol) (point-at-eol))))
-                                           return t)
-                                     (loop for w2 in words-2
-                                           if (string-match (regexp-quote w2)
-                                                            (save-excursion
-                                                              (go-back-previous-line)
-                                                              (go-back-previous-line)
-                                                              (buffer-substring (point-at-bol) (point-at-eol))))
-                                           return t))
-                             return (save-excursion
-                                      (go-back-previous-line)
-                                      (let ((a (+ (point-at-bol) (length line-left)))
-                                            (b (- (point-at-eol) (length line-right))))
-                                        (cond ((< a (point-at-eol)) a)
-                                              ((> b (point-at-bol)) b)
-                                              (t (point-at-eol))))
-                                      )))
-                     (save-excursion
-                       (goto-char p)
-                       (loop for w2 in words-2
-                             if (and (re-search-backward (regexp-quote w2) nil t)
-                                     (loop for w1 in words-1
-                                           if (string-match (regexp-quote w1)
-                                                            (save-excursion
-                                                              (go-back-next-line)
-                                                              (buffer-substring (point-at-bol) (point-at-eol))))
-                                           return t)
-                                     (loop for w3 in words-3
-                                           if (string-match (regexp-quote w3)
-                                                            (save-excursion
-                                                              (go-back-next-line)
-                                                              (go-back-next-line)
-                                                              (buffer-substring (point-at-bol) (point-at-eol))))
-                                           return t))
-                             return (save-excursion
-                                      (go-back-next-line)
-                                      (+ (point-at-bol) (length line-left)))))
-                     p)))))
-
-;; (save-excursion
-;;   (go-back-go2 go-back-current))
+      ;; find every line with a matching word, normalize, use line with most matches
+      (let ((matches-1 (save-excursion
+                         (loop for w1 in words-1
+                               if (string-equal w1 "#bobp#")
+                               collect '(0)
+                               else
+                               if (string-equal w1 "#eobp#")
+                               collect `(,(point-max))
+                               else
+                               do (goto-char (point-min))
+                               collect (loop while (re-search-forward w1 nil t)
+                                             collect (point-at-bol)))))
+            (matches-2 (save-excursion
+                         (loop for w2 in words-2
+                               if (string-equal w2 "#bobp#")
+                               collect '(0)
+                               else
+                               if (string-equal w2 "#eobp#")
+                               collect `(,(point-max))
+                               else
+                               do (goto-char (point-min))
+                               collect (loop while (re-search-forward w2 nil t)
+                                             collect (point-at-bol 2)))))
+            (matches-3 (save-excursion
+                         (loop for w3 in words-3
+                               if (string-equal w3 "#bobp#")
+                               collect '(0)
+                               else
+                               if (string-equal w3 "#eobp#")
+                               collect `(,(point-max))
+                               else
+                               do (goto-char (point-min))
+                               collect (loop while (re-search-forward w3 nil t)
+                                             collect (point-at-bol 0))))))
+        (let* ((all-matches (sort (append (apply 'append matches-1)
+                                          (apply 'append matches-2)
+                                          (apply 'append matches-3))
+                                  (lambda (a b)
+                                    (< a b))))
+               (last-match (car all-matches))
+               (counter 0)
+               (longest-counter 0)
+               (longest-matches `(,last-match))
+               (closest-diff nil)
+               (closest-match nil)
+               )
+          (dolist (current-match all-matches)
+            (if (eq current-match last-match)
+                (setq counter (1+ counter))
+              (when (eq counter longest-counter)
+                (setq longest-matches (append longest-matches `(,last-match))))
+              (when (> counter longest-counter)
+                (setq longest-counter counter
+                      longest-matches `(,last-match)))
+              (setq last-match current-match
+                    counter 1)))
+          (dolist (current-match longest-matches)
+            (when (or (not closest-match)
+                      (< (abs (- p current-match)) closest-diff))
+              (setq closest-diff (abs (- p current-match))
+                    closest-match current-match)))
+          (goto-char (save-excursion
+                       (goto-char closest-match)
+                       (let ((offset nil))
+                         (cond ((and (>= (length re-left) (length re-right))
+                                     (setq offset (string-match re-left (buffer-substring (point-at-bol) (point-at-eol)))))
+                                (+ closest-match offset (length line-left)))
+                               ((and (< (length re-left) (length re-right))
+                                     (setq offset (string-match re-right (buffer-substring (point-at-bol) (point-at-eol)))))
+                                (+ closest-match offset))
+                               (t
+                                (if (> (+ closest-match (length line-left)) (point-at-eol))
+                                    (point-at-eol)
+                                  (+ closest-match (length line-left))))
+                               ))))
+          )))))
 
 (defun go-back-make-location ()
   (save-excursion
@@ -238,7 +233,6 @@
      (setq go-back-current (car (last go-back-past)))
      )
     (:left
-
      (add-to-list 'go-back-past (car go-back-future) t)
      (add-to-list 'go-back-history `(shift ,direction))
      (setq go-back-future (cdr go-back-future))
@@ -257,6 +251,7 @@
 
 (defun* go-back-push (&optional loc (direction :left))
   (interactive)
+  (push-mark)
   (unless loc
     (setq loc (go-back-make-location)))
   (case direction
@@ -389,6 +384,8 @@
                                         (eval-defun
                                          eval-last-sexp
                                          eval-buffer
+                                         eval-region
+                                         eval-region-or-defun
                                          compile)))
 
 (setq go-back-cursor-commands '((next-line
