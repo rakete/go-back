@@ -92,19 +92,19 @@
                                  (t
                                   (add-to-list 'res (regexp-quote (concat " " (pop words) " "))))))
                          res))))
-    (switch-to-buffer (or (nth 0 loc)
-                          (current-buffer)))
-    (set-window-start nil (eval (nth 2 loc)))
-    (let* ((p (eval (nth 1 loc)))
+    ;;(set-window-start nil (eval (nth 2 loc)))
+    (let* ((buffer (nth 0 loc))
+           (p (eval (nth 1 loc)))
            (line-left (nth 3 loc))
            (line-right (nth 4 loc))
-           (re-left (regexp-quote line-left))
-           (re-right (regexp-quote line-right))
+           (re-left (when line-left (regexp-quote line-left)))
+           (re-right (when line-right (regexp-quote line-right)))
            (line-prev (nth 5 loc))
            (line-next (nth 6 loc))
            (words-1 (line-to-re (concat line-left line-right)))
            (words-2 (line-to-re line-prev))
            (words-3 (line-to-re line-next)))
+      (switch-to-buffer buffer)
       ;; find every line with a matching word, normalize, use line with most matches
       (let ((matches-1 (save-excursion
                          (loop for w1 in words-1
@@ -127,7 +127,8 @@
                                else
                                do (goto-char (point-min))
                                collect (loop while (re-search-forward w2 nil t)
-                                             collect (point-at-bol 2)))))
+                                             collect (save-excursion (go-back-next-line)
+                                                                     (point-at-bol))))))
             (matches-3 (save-excursion
                          (loop for w3 in words-3
                                if (string-equal w3 "#bobp#")
@@ -138,7 +139,8 @@
                                else
                                do (goto-char (point-min))
                                collect (loop while (re-search-forward w3 nil t)
-                                             collect (point-at-bol 0))))))
+                                             collect (save-excursion (go-back-previous-line)
+                                                                     (point-at-bol)))))))
         (let* ((all-matches (sort (append (apply 'append matches-1)
                                           (apply 'append matches-2)
                                           (apply 'append matches-3))
@@ -151,36 +153,35 @@
                (closest-diff nil)
                (closest-match nil)
                )
-          (dolist (current-match all-matches)
-            (if (eq current-match last-match)
-                (setq counter (1+ counter))
-              (when (eq counter longest-counter)
-                (setq longest-matches (append longest-matches `(,last-match))))
-              (when (> counter longest-counter)
-                (setq longest-counter counter
-                      longest-matches `(,last-match)))
-              (setq last-match current-match
-                    counter 1)))
-          (dolist (current-match longest-matches)
-            (when (or (not closest-match)
-                      (< (abs (- p current-match)) closest-diff))
-              (setq closest-diff (abs (- p current-match))
-                    closest-match current-match)))
-          (goto-char (save-excursion
-                       (goto-char closest-match)
-                       (let ((offset nil))
-                         (cond ((and (>= (length re-left) (length re-right))
-                                     (setq offset (string-match re-left (buffer-substring (point-at-bol) (point-at-eol)))))
-                                (+ closest-match offset (length line-left)))
-                               ((and (< (length re-left) (length re-right))
-                                     (setq offset (string-match re-right (buffer-substring (point-at-bol) (point-at-eol)))))
-                                (+ closest-match offset))
-                               (t
-                                (if (> (+ closest-match (length line-left)) (point-at-eol))
+          (when all-matches
+            (dolist (current-match all-matches)
+              (if (eq current-match last-match)
+                  (setq counter (1+ counter))
+                (when (eq counter longest-counter)
+                  (setq longest-matches (append longest-matches `(,last-match))))
+                (when (> counter longest-counter)
+                  (setq longest-counter counter
+                        longest-matches `(,last-match)))
+                (setq last-match current-match
+                      counter 1)))
+            (dolist (current-match longest-matches)
+              (when (or (not closest-match)
+                        (< (abs (- p current-match)) closest-diff))
+                (setq closest-diff (abs (- p current-match))
+                      closest-match current-match)))
+            (goto-char (print closest-match))
+            (let* ((offset nil)
+                   (new-p (cond ((and (>= (length re-left) (length re-right))
+                                      (setq offset (string-match re-left (buffer-substring (point-at-bol) (point-at-eol)))))
+                                 (+ closest-match offset (length line-left)))
+                                ((and (< (length re-left) (length re-right))
+                                      (setq offset (string-match re-right (buffer-substring (point-at-bol) (point-at-eol)))))
+                                 (+ closest-match offset))
+                                (t
+                                 (+ closest-match (length line-left))))))
+              (goto-char (print (if (>= new-p (point-at-eol))
                                     (point-at-eol)
-                                  (+ closest-match (length line-left))))
-                               ))))
-          )))))
+                                  new-p))))))))))
 
 (defun go-back-make-location ()
   (save-excursion
