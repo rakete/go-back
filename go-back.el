@@ -35,12 +35,6 @@
 (defvar go-back-last-jump-cost 0)
 (make-variable-buffer-local 'go-back-last-jump-cost)
 
-(setq go-back-past '((nil (point-min) (point-min)))
-      go-back-future '((nil (point-max) (point-max)))
-      go-back-current '(nil  (point-min) (point-min))
-      go-back-history '()
-      go-back-last-jump-cost 0)
-
 (defun go-back-ignore-word-p (w &optional min-length)
   (and (< (length (substring-no-properties w)) (or min-length 2))
        (< (let ((hs (make-hash-table)))
