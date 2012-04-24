@@ -241,8 +241,8 @@
   (or (and (eq (nth 0 a) (nth 0 b))
            (string-equal (nth 3 a) (nth 3 b))
            (string-equal (nth 4 a) (nth 4 b)))
-      (and (eq (nth 0 a) (nth 0 b))
-           (eq (nth 1 a) (nth 1 b)))))
+      (and (equal (nth 0 a) (nth 0 b))
+           (= (nth 1 a) (nth 1 b)))))
 
 (defun* go-back-push (&optional loc (direction :left))
   (interactive)
