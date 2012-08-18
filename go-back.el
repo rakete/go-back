@@ -15,19 +15,43 @@
 ;; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 ;; loosely based on and inspired by point-stack.el by
-;; matt harrison (matthewharrison@gmail.com)
-;; dmitry gutov  (dgutov@yandex.ru)
+;; matt harrison <matthewharrison@gmail.com>
+;; dmitry gutov <dgutov@yandex.ru>
+
+;; what I want
+;; 1. remember the last position where I made something meaningful [eval-region, save-buffer, ...]
+;; 2. restore that position while remembering the position I am currently at
+;; 3. scroll through remembered positions until I find the one I want to do something at,
+;;    then that one should be the one I go back to first after the next time I restored a
+;;    position
+;;
+;; lets try that again:
+;; I want to remember TWO positions, the one I am working at RIGHT NOW, and the one I where
+;; I was working at BEFORE
+;; the only way to implement that is to assume that when I restore a position, that I want to
+;; work there and therefore remember that position IN ADDITION to the position where I was
+;; before restoring
 
 (require 'cl)
 
-(defvar go-back-past '((nil (point-min) (point-min))))
+(defvar go-back-past '())
 (make-variable-buffer-local 'go-back-past)
 
-(defvar go-back-future '((nil (point-max) (point-max))))
+(defvar go-back-future '())
 (make-variable-buffer-local 'go-back-future)
 
-(defvar go-back-current '(nil (point-min) (point-min)))
+(defvar go-back-current nil)
 (make-variable-buffer-local 'go-back-current)
+
+(defvar go-back-before '(nil (point-min) (point-min)))
+(make-variable-buffer-local 'go-back-before)
+
+(defun go-back-reset ()
+  (interactive)
+  (setq go-back-past '()
+        go-back-future '()
+        go-back-current nil
+        go-back-before nil))
 
 (defvar go-back-history '())
 (make-variable-buffer-local 'go-back-history)
@@ -92,7 +116,6 @@
                                  (t
                                   (add-to-list 'res (regexp-quote (concat " " (pop words) " "))))))
                          res))))
-    ;;(set-window-start nil (eval (nth 2 loc)))
     (let* ((buffer (nth 0 loc))
            (p (eval (nth 1 loc)))
            (line-left (nth 3 loc))
@@ -151,8 +174,7 @@
                (longest-counter 0)
                (longest-matches `(,last-match))
                (closest-diff nil)
-               (closest-match nil)
-               )
+               (closest-match nil))
           (when all-matches
             (dolist (current-match all-matches)
               (if (eq current-match last-match)
@@ -209,32 +231,33 @@
                      (mapconcat #'prin1-to-string (mapcar #'second l) ",")
                      "],"
                      (prin1-to-string (second go-back-current))
+                     ","
+                     (prin1-to-string (second go-back-before))
                      ",["
                      (mapconcat #'prin1-to-string (mapcar #'second r) ",")
                      "] cost: " (prin1-to-string go-back-last-jump-cost)))))
 
-;; '(1 2 3 4) 4 '() -right-> '(1 2 3) 3 '(4)
-;; '(1 2 3 4) 4 '() -left--> '(2 3 4) 1 '(1)
 (defun* go-back-shift (&optional (direction :left))
   (interactive)
   (case direction
     (:right
-     (add-to-list 'go-back-future (car (last go-back-past)))
-     (add-to-list 'go-back-history `(shift ,direction))
-     (setq go-back-past (butlast go-back-past))
-     (when (null go-back-past)
-       (setq go-back-past (last go-back-future)
-             go-back-future (butlast go-back-future)))
-     (setq go-back-current (car (last go-back-past)))
-     )
+     (when (car (last go-back-past))
+       (add-to-list 'go-back-future (car (last go-back-past)))
+       (add-to-list 'go-back-history `(shift ,direction))
+       (setq go-back-past (butlast go-back-past))
+       (when (null go-back-past)
+         (setq go-back-past (last go-back-future)
+               go-back-future (butlast go-back-future)))
+       (setq go-back-current (car (last go-back-past)))))
     (:left
-     (add-to-list 'go-back-past (car go-back-future) t)
-     (add-to-list 'go-back-history `(shift ,direction))
-     (setq go-back-future (cdr go-back-future))
-     (when (null go-back-future)
-       (setq go-back-future (list (first go-back-past))
-             go-back-past (cdr go-back-past))))
-    (setq go-back-current (car go-back-future))
+     (when (car go-back-future)
+       (add-to-list 'go-back-past (car go-back-future) t)
+       (add-to-list 'go-back-history `(shift ,direction))
+       (setq go-back-future (cdr go-back-future))
+       (when (null go-back-future)
+         (setq go-back-future (list (first go-back-past))
+               go-back-past (cdr go-back-past))))
+     (setq go-back-current (car go-back-future)))
     ))
 
 (defun go-back-loc-equal (a b)
@@ -259,8 +282,7 @@
      (setq go-back-past (remove-if (lambda (x) (go-back-loc-equal x loc)) go-back-past))
      (add-to-list 'go-back-past loc t 'go-back-loc-equal)
      (add-to-list 'go-back-history `(insert ,direction))
-     (setq go-back-current loc)))
-  )
+     (setq go-back-current loc))))
 
 (defun* go-back-remove (&optional (direction :left))
   (interactive)
@@ -271,37 +293,14 @@
        (when (eq (car go-back-future) go-back-current)
          (setq go-back-current (car (cdr go-back-future))))
        (setq go-back-future (cdr go-back-future))))
-     (:left
-      (when go-back-past
-        (add-to-list 'go-back-history `(remove ,direction ,(car (last go-back-past))))
-        (when (eq (car (last go-back-past)) go-back-current)
-          (setq go-back-current (car (last (butlast go-back-past)))))
-        (setq go-back-past (butlast go-back-past)))))
-  )
+    (:left
+     (when go-back-past
+       (add-to-list 'go-back-history `(remove ,direction ,(car (last go-back-past))))
+       (when (eq (car (last go-back-past)) go-back-current)
+         (setq go-back-current (car (last (butlast go-back-past)))))
+       (setq go-back-past (butlast go-back-past))))))
 
-;; (defun go-back-rewind ()
-;;   (interactive)
-;;   (when go-back-history
-;;     (case (first (car go-back-history))
-;;       ('shift
-;;        (case (second (car go-back-history))
-;;          (:left
-;;           (go-back-shift :right))
-;;          (:right
-;;           (go-back-shift :left))))
-;;       ('insert
-;;        (case (second (car go-back-history))
-;;          (:left
-;;           (go-back-remove :right))
-;;          (:right
-;;           (go-back-remove :left))))
-;;       ('remove
-;;        (case (second (car go-back-history))
-;;          (:left
-;;           (go-back-push :left (third (car go-back-history))))
-;;          (:right
-;;           (go-back-push :right (third (car go-back-history)))))))
-;;     (setq go-back-history (cdr go-back-history))))
+(defvar go-back-prev-invocations 0)
 
 (defun go-back-prev ()
   (interactive)
@@ -317,14 +316,26 @@
        (setq go-back-current (car (last go-back-past)))
        )
       (t
-       (go-back-go go-back-current)
-       (when (eq go-back-current (car go-back-future))
-         (go-back-shift :left))
-       (go-back-push loc :right)
-       (setq go-back-current (car (last go-back-past)))
+       (let ((invoke-location (go-back-make-location)))
+         (go-back-go go-back-current)
+         (setq go-back-before invoke-location)
+         (when (= (point) (nth 1 invoke-location))
+           (go-back-shift :right)
+           (setq go-back-current (car (last go-back-past)))
+           (go-back-go go-back-current)
+           (setq go-back-before invoke-location))
+         (when (eq go-back-current (car go-back-future))
+           (go-back-shift :left))
+         (go-back-push loc :right)
+         (setq go-back-current (car (last go-back-past))))
        )))
-  ;;(go-back-dump-state)
-  )
+  (go-back-dump-state))
+
+;; blah
+
+;; foo
+
+;; bar
 
 (defun go-back-next ()
   (interactive)
@@ -340,12 +351,15 @@
        (setq go-back-current (car go-back-future))
        )
       (t
-       (setq go-back-current (car go-back-future))
-       (go-back-go go-back-current)
+       (if go-back-before
+           (progn
+             (go-back-go go-back-before)
+             (setq go-back-before nil))
+         (setq go-back-current (car go-back-future))
+         (go-back-go go-back-current))
        )
       ))
-  ;;(go-back-dump-state)
-  )
+  (go-back-dump-state))
 
 (setq go-back-trigger-command-symbols '((isearch-mode
                                          isearch-forward
@@ -359,8 +373,6 @@
                                          isearch-other-control-char)
                                         (undo-tree-undo
                                          undo-tree-redo)
-                                        ;;(highlight-phrase)
-                                        ;;(highlight-symbol-at-point)
                                         (highlight-symbol-prev
                                          highlight-symbol-jump
                                          highlight-symbol-next
@@ -375,7 +387,8 @@
                                          scroll-down-mark
                                          scroll-down-nomark)
                                         (save-buffer
-                                         switch-to-buffer)
+                                         switch-to-buffer
+                                         save-window-excursion-buffer)
                                         (eval-defun
                                          eval-last-sexp
                                          eval-buffer
@@ -420,15 +433,6 @@
                                  beginning-of-line-mark
                                  beginning-of-line-nomark)))
 
-;; (keyboard-quit)
-;; (indent-for-tab-command)
-;; (newline-and-indent)
-;; (self-insert-command)
-;; (backward-delete-char
-;;  backward-delete-char-untabify)
-;; (kill-region
-;;  kill-whole-line-indent)
-
 (defun go-back-pre-command-trigger ()
   (let* ((tc this-command)
          (lc last-command)
@@ -437,9 +441,6 @@
                 (eq tc 'go-back-prev)
                 (eq tc 'go-back-push)
                 (eq tc 'go-back-pre-command-trigger))
-      ;; (loop for xs in go-back-cursor-commands
-      ;;       until (when (some 'identity (mapcar (apply-partially 'eq tc) xs))
-      ;;               (setq go-back-current (go-back-make-location))))
       (loop for ys in go-back-trigger-command-symbols
             until (when (some 'identity (mapcar (apply-partially 'eq tc) ys))
                     (setq triggered `(command ,ys))))
@@ -449,16 +450,8 @@
                         (eq lc 'go-back-prev)
                         (eq lc 'go-back-push))
               (when (buffer-file-name (current-buffer))
-                (go-back-push)
-                )))
-        ;; (save-excursion
-        ;;   (save-restriction
-        ;;     (unless (go-back-ignore-line-p)
-        ;;       (print (go-back-make-location)))))
-        ))))
+                (go-back-push))))))))
 
 (add-hook 'pre-command-hook 'go-back-pre-command-trigger)
-
-;;(remove-hook 'pre-command-hook 'go-back-pre-command-trigger)
 
 (provide 'go-back)
