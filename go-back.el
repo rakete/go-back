@@ -380,9 +380,13 @@
                                         (scroll-up
                                          scroll-up-mark
                                          scroll-up-nomark
+                                         scroll-up-command
                                          scroll-down
                                          scroll-down-mark
-                                         scroll-down-nomark)
+                                         scroll-down-nomark
+                                         scroll-down-command
+                                         beginning-of-buffer
+                                         end-of-buffer)
                                         (save-buffer
                                          switch-to-buffer
                                          save-window-excursion-buffer)
@@ -393,42 +397,42 @@
                                          eval-region-or-defun
                                          compile)))
 
-(setq go-back-cursor-commands '((next-line
-                                 next-line-mark
-                                 next-line-nomark
-                                 previous-line
-                                 previous-line-mark
-                                 previous-line-nomark
-                                 backward-char-mark
-                                 backward-char-nomark
-                                 backward-word
-                                 backward-word-mark
-                                 backward-word-nomark
-                                 backward-sexp
-                                 backward-sexp-mark
-                                 backward-sexp-nomark
-                                 backward-sentence
-                                 backward-paragraph
-                                 backward-paragraph-mark
-                                 backward-paragraph-nomark
-                                 forward-char-mark
-                                 forward-char-nomark
-                                 forward-word
-                                 forward-word-mark
-                                 forward-word-nomark
-                                 forward-sexp
-                                 forward-sexp-mark
-                                 forward-sexp-nomark
-                                 forward-sentence
-                                 forward-paragraph
-                                 forward-paragraph-mark
-                                 forward-paragraph-nomark
-                                 end-of-line
-                                 end-of-line-mark
-                                 end-of-line-nomark
-                                 beginning-of-line
-                                 beginning-of-line-mark
-                                 beginning-of-line-nomark)))
+;; (setq go-back-cursor-commands '((next-line
+;;                                  next-line-mark
+;;                                  next-line-nomark
+;;                                  previous-line
+;;                                  previous-line-mark
+;;                                  previous-line-nomark
+;;                                  backward-char-mark
+;;                                  backward-char-nomark
+;;                                  backward-word
+;;                                  backward-word-mark
+;;                                  backward-word-nomark
+;;                                  backward-sexp
+;;                                  backward-sexp-mark
+;;                                  backward-sexp-nomark
+;;                                  backward-sentence
+;;                                  backward-paragraph
+;;                                  backward-paragraph-mark
+;;                                  backward-paragraph-nomark
+;;                                  forward-char-mark
+;;                                  forward-char-nomark
+;;                                  forward-word
+;;                                  forward-word-mark
+;;                                  forward-word-nomark
+;;                                  forward-sexp
+;;                                  forward-sexp-mark
+;;                                  forward-sexp-nomark
+;;                                  forward-sentence
+;;                                  forward-paragraph
+;;                                  forward-paragraph-mark
+;;                                  forward-paragraph-nomark
+;;                                  end-of-line
+;;                                  end-of-line-mark
+;;                                  end-of-line-nomark
+;;                                  beginning-of-line
+;;                                  beginning-of-line-mark
+;;                                  beginning-of-line-nomark)))
 
 (defun go-back-pre-command-trigger ()
   (let* ((tc this-command)
@@ -441,14 +445,18 @@
       (loop for ys in go-back-trigger-command-symbols
             until (when (some 'identity (mapcar (apply-partially 'eq tc) ys))
                     (setq triggered `(command ,ys))))
-      (if triggered
-          (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
-            (unless (or (eq lc 'go-back-next)
-                        (eq lc 'go-back-prev)
-                        (eq lc 'go-back-push))
-              (when (buffer-file-name (current-buffer))
-                (go-back-push))))))))
+      (when triggered
+        (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
+          (unless (or (eq lc 'go-back-next)
+                      (eq lc 'go-back-prev)
+                      (eq lc 'go-back-push))
+            (when (buffer-file-name (current-buffer))
+              (go-back-push)
+              )))))))
 
-(add-hook 'pre-command-hook 'go-back-pre-command-trigger)
+(eval-after-load "go-back"
+  '(progn
+     (kill-local-variable 'pre-command-hook)
+     (add-hook 'pre-command-hook 'go-back-pre-command-trigger t nil)))
 
 (provide 'go-back)
