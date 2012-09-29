@@ -191,7 +191,7 @@
                         (< (abs (- p current-match)) closest-diff))
                 (setq closest-diff (abs (- p current-match))
                       closest-match current-match)))
-            (goto-char (print closest-match))
+            (goto-char closest-match)
             (let* ((offset nil)
                    (new-p (cond ((and (>= (length re-left) (length re-right))
                                       (setq offset (string-match re-left (buffer-substring (point-at-bol) (point-at-eol)))))
@@ -201,9 +201,9 @@
                                  (+ closest-match offset))
                                 (t
                                  (+ closest-match (length line-left))))))
-              (goto-char (print (if (>= new-p (point-at-eol))
-                                    (point-at-eol)
-                                  new-p))))))))))
+              (goto-char (if (>= new-p (point-at-eol))
+                             (point-at-eol)
+                           new-p)))))))))
 
 (defun go-back-make-location ()
   (save-excursion
@@ -328,8 +328,7 @@
            (go-back-shift :left))
          (go-back-push loc :right)
          (setq go-back-current (car (last go-back-past))))
-       )))
-  (go-back-dump-state))
+       ))))
 
 ;; blah
 
@@ -357,9 +356,7 @@
              (setq go-back-before nil))
          (setq go-back-current (car go-back-future))
          (go-back-go go-back-current))
-       )
-      ))
-  (go-back-dump-state))
+       ))))
 
 (setq go-back-trigger-command-symbols '((isearch-mode
                                          isearch-forward
