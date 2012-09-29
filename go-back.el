@@ -31,6 +31,19 @@
 ;; the only way to implement that is to assume that when I restore a position, that I want to
 ;; work there and therefore remember that position IN ADDITION to the position where I was
 ;; before restoring
+;;
+;; do4: 1 2 3 4
+;;            *
+;; f11: 1 2 3 4
+;;          *<
+;; f11: 1 2 3 4
+;;        *<
+;; do :       4 3 2 1
+;;                *
+;; do :       4 3 2 5 1
+;;                 +*
+;; do :       4 3 2 5 6 1
+;;                   +*
 
 (require 'cl)
 
