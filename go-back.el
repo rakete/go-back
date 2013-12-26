@@ -390,6 +390,11 @@
                                         (sourcemarker-visit)
                                         (imenu
                                          imenu-many)
+                                        (etags-select-find-tag
+                                         find-tag
+                                         pop-tag-mark
+                                         tags-search
+                                         tags-loop-continue)
                                         (scroll-up
                                          scroll-up-mark
                                          scroll-up-nomark
