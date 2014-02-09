@@ -371,49 +371,52 @@
          (go-back-go go-back-current))
        ))))
 
-(setq go-back-trigger-command-symbols '((isearch-mode
-                                         isearch-forward
-                                         isearch-repeat-forward
-                                         isearch-backward
-                                         isearch-repeat-backward
-                                         isearch-resume
-                                         isearch-printing-char
-                                         isearch-abort
-                                         isearch-exit
-                                         isearch-other-control-char)
-                                        (undo-tree-undo
-                                         undo-tree-redo)
-                                        (highlight-symbol-prev
-                                         highlight-symbol-jump
-                                         highlight-symbol-next
-                                         highlight-symbol-jump)
-                                        (sourcemarker-visit)
-                                        (imenu
-                                         imenu-many)
-                                        (etags-select-find-tag
-                                         find-tag
-                                         pop-tag-mark
-                                         tags-search
-                                         tags-loop-continue)
-                                        (scroll-up
-                                         scroll-up-mark
-                                         scroll-up-nomark
-                                         scroll-up-command
-                                         scroll-down
-                                         scroll-down-mark
-                                         scroll-down-nomark
-                                         scroll-down-command
-                                         beginning-of-buffer
-                                         end-of-buffer)
-                                        (save-buffer
-                                         switch-to-buffer
-                                         save-window-excursion-buffer)
-                                        (eval-defun
-                                         eval-last-sexp
-                                         eval-buffer
-                                         eval-region
-                                         eval-region-or-defun
-                                         compile)))
+(defvar go-back-trigger-command-symbols '((isearch-mode
+                                           isearch-forward
+                                           isearch-repeat-forward
+                                           isearch-backward
+                                           isearch-repeat-backward
+                                           isearch-resume
+                                           isearch-printing-char
+                                           isearch-abort
+                                           isearch-exit
+                                           isearch-other-control-char)
+                                          (undo-tree-undo
+                                           undo-tree-redo)
+                                          (highlight-symbol-prev
+                                           highlight-symbol-jump
+                                           highlight-symbol-next
+                                           highlight-symbol-jump)
+                                          (smartscan-symbol-go-forward
+                                           smartscan-symbol-go-backward
+                                           smartscan-symbol-replace)
+                                          (sourcemarker-visit)
+                                          (imenu
+                                           imenu-many)
+                                          (etags-select-find-tag
+                                           find-tag
+                                           pop-tag-mark
+                                           tags-search
+                                           tags-loop-continue)
+                                          (scroll-up
+                                           scroll-up-mark
+                                           scroll-up-nomark
+                                           scroll-up-command
+                                           scroll-down
+                                           scroll-down-mark
+                                           scroll-down-nomark
+                                           scroll-down-command
+                                           beginning-of-buffer
+                                           end-of-buffer)
+                                          (save-buffer
+                                           switch-to-buffer
+                                           save-window-excursion-buffer)
+                                          (eval-defun
+                                           eval-last-sexp
+                                           eval-buffer
+                                           eval-region
+                                           eval-region-or-defun
+                                           compile)))
 
 ;; (setq go-back-cursor-commands '((next-line
 ;;                                  next-line-mark
@@ -469,8 +472,7 @@
                       (eq lc 'go-back-prev)
                       (eq lc 'go-back-push))
             (when (buffer-file-name (current-buffer))
-              (go-back-push)
-              )))))))
+              (go-back-push))))))))
 
 (eval-after-load "go-back"
   '(progn
