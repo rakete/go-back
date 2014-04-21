@@ -395,6 +395,8 @@
                                          tags-search
                                          tags-loop-continue)
                                         (mwheel-scroll
+                                         cua-scroll-up
+                                         cua-scroll-down
                                          scroll-up
                                          scroll-up-mark
                                          scroll-up-nomark
