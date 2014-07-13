@@ -434,8 +434,12 @@
                                         (highlight-symbol-prev
                                          highlight-symbol-jump
                                          highlight-symbol-next
-                                         highlight-symbol-jump)
+                                         highlight-symbol-jump
+                                         smartscan-symbol-go-forward
+                                         smartscan-symbol-go-backward
+                                         smartscan-symbol-replace)
                                         (sourcemarker-visit)
+                                        (ace-jump-mode)
                                         (imenu
                                          imenu-many)
                                         (etags-select-find-tag
@@ -456,8 +460,9 @@
                                          scroll-down-command
                                          beginning-of-buffer
                                          end-of-buffer
-                                         next-line
-                                         previous-line)
+                                         ;;next-line
+                                         ;;previous-line
+                                         )
                                         (save-buffer
                                          switch-to-buffer
                                          save-window-excursion-buffer)
