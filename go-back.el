@@ -149,9 +149,12 @@
         (setq final-point
               (save-excursion
                 (goto-char p)
-                (when (or (re-search-forward re-right (point-at-eol) t)
-                          (re-search-backward re-left (point-at-bol) t))
-                  p))))
+                (cond ((re-search-forward re-right (point-at-eol) t)
+                       (re-search-backward re-right (point-at-bol) t)
+                       (point))
+                      ((re-search-backward re-left (point-at-bol) t)
+                       (re-search-forward re-left (point-at-eol) t)
+                       (point))))))
       ;; find every line with a matching word, normalize, use line with most matches
       (unless final-point
         (setq final-point
