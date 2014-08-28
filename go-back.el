@@ -143,18 +143,19 @@
            (words-2 (line-to-re line-prev))
            (words-3 (line-to-re line-next))
            (final-point nil))
-      (switch-to-buffer buffer)
-      ;; goto original point and try to match line to either left or right regex
-      (unless final-point
-        (setq final-point
-              (save-excursion
-                (goto-char p)
-                (cond ((re-search-forward re-right (point-at-eol) t)
-                       (re-search-backward re-right (point-at-bol) t)
-                       (point))
-                      ((re-search-backward re-left (point-at-bol) t)
-                       (re-search-forward re-left (point-at-eol) t)
-                       (point))))))
+      (when loc
+        (switch-to-buffer (or buffer (other-buffer)))
+        ;; goto original point and try to match line to either left or right regex
+        (unless final-point
+          (setq final-point
+                (save-excursion
+                  (goto-char p)
+                  (cond ((re-search-forward re-right (point-at-eol) t)
+                         (re-search-backward re-right (point-at-bol) t)
+                         (point))
+                        ((re-search-backward re-left (point-at-bol) t)
+                         (re-search-forward re-left (point-at-eol) t)
+                         (point)))))))
       ;; find every line with a matching word, normalize, use line with most matches
       (unless final-point
         (setq final-point
