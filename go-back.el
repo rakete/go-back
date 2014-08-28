@@ -472,7 +472,9 @@
                                          eval-buffer
                                          eval-region
                                          eval-region-or-defun
-                                         compile)))
+                                         compile)
+                                        (project-jump-definition
+                                         project-jump-regexp)))
 
 ;; (setq go-back-cursor-commands '((next-line
 ;;                                  next-line-mark
