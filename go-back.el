@@ -522,12 +522,18 @@
       (loop for ys in go-back-trigger-command-symbols
             until (when (some 'identity (mapcar (apply-partially 'eq tc) ys))
                     (setq triggered `(command ,ys))))
-      (when triggered
-        (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
-          (unless (or (eq lc 'go-back-next)
-                      (eq lc 'go-back-prev)
-                      (eq lc 'go-back-push))
-            (when (buffer-file-name (current-buffer))
+      (if triggered
+          (progn
+            (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
+              (unless (or (eq lc 'go-back-next)
+                          (eq lc 'go-back-prev)
+                          (eq lc 'go-back-push))
+                (when (buffer-file-name (current-buffer))
+                  (go-back-push)))))
+        (dolist (ov (overlays-at (point)))
+          (unless (overlay-get ov 'go-back-to)
+            (when (eq (overlay-get ov 'jump-highlight) 'view)
+              (overlay-put ov 'go-back-to t)
               (go-back-push))))))))
 
 (eval-after-load "go-back"
