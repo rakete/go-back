@@ -365,6 +365,15 @@
 
 (defun go-back-prev ()
   (interactive)
+  (dolist (ov (overlays-at (point)))
+    (let ((marker (overlay-get ov 'pop-tag-marker)))
+      (when (and marker
+                 (not (eq (marker-buffer marker) (current-buffer))))
+        (switch-to-buffer (or (marker-buffer marker)
+                              (error "The marked buffer has been deleted")))
+        (goto-char (marker-position marker))
+        (set-marker marker nil nil)
+        (overlay-put ov 'pop-tag-marker nil))))
   (let* ((loc (go-back-make-location)))
     (case last-command
       ('go-back-prev
@@ -466,12 +475,12 @@
                                          )
                                         (save-buffer
                                          switch-to-buffer
-                                         save-window-excursion-buffer)
+                                         lazor/save-window-excursion-buffer)
                                         (eval-defun
                                          eval-last-sexp
                                          eval-buffer
                                          eval-region
-                                         eval-region-or-defun
+                                         lazor/eval-region-or-defun
                                          compile)
                                         (project-jump-definition
                                          project-jump-regexp)))
@@ -516,7 +525,8 @@
 (defun go-back-pre-command-trigger ()
   (let* ((tc this-command)
          (lc last-command)
-         (triggered nil))
+         (triggered nil)
+         (pushed nil))
     (unless (or (eq tc 'go-back-next)
                 (eq tc 'go-back-prev)
                 (eq tc 'go-back-push)
@@ -524,14 +534,14 @@
       (loop for ys in go-back-trigger-command-symbols
             until (when (some 'identity (mapcar (apply-partially 'eq tc) ys))
                     (setq triggered `(command ,ys))))
-      (if triggered
-          (progn
-            (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
-              (unless (or (eq lc 'go-back-next)
-                          (eq lc 'go-back-prev)
-                          (eq lc 'go-back-push))
-                (when (buffer-file-name (current-buffer))
-                  (go-back-push)))))
+      (when triggered
+        (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
+          (unless (or (eq lc 'go-back-next)
+                      (eq lc 'go-back-prev)
+                      (eq lc 'go-back-push))
+            (when (buffer-file-name (current-buffer))
+              (setq pushed (go-back-push))))))
+      (unless pushed
         (dolist (ov (overlays-at (point)))
           (unless (overlay-get ov 'go-back-to)
             (when (eq (overlay-get ov 'jump-highlight) 'view)
