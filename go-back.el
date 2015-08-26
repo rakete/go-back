@@ -365,40 +365,43 @@
 
 (defun go-back-prev ()
   (interactive)
-  (dolist (ov (overlays-at (point)))
-    (let ((marker (overlay-get ov 'pop-tag-marker)))
-      (when (and marker
-                 (not (eq (marker-buffer marker) (current-buffer))))
-        (switch-to-buffer (or (marker-buffer marker)
-                              (error "The marked buffer has been deleted")))
-        (goto-char (marker-position marker))
-        (set-marker marker nil nil)
-        (overlay-put ov 'pop-tag-marker nil))))
-  (let* ((loc (go-back-make-location)))
-    (case last-command
-      ('go-back-prev
-       (go-back-shift :right)
-       (go-back-go (car (last go-back-past)))
-       (setq go-back-current (car (last go-back-past)))
-       )
-      ('go-back-next
-       (go-back-go (car (last go-back-past)))
-       (setq go-back-current (car (last go-back-past)))
-       )
-      (t
-       (let ((invoke-location (go-back-make-location)))
-         (go-back-go go-back-current)
-         (setq go-back-before invoke-location)
-         (when (= (point) (nth 1 invoke-location))
+  (let ((used-pop-tag-marker nil))
+    (dolist (ov (overlays-at (point)))
+      (let ((marker (overlay-get ov 'pop-tag-marker)))
+        (when (and marker
+                   (not (eq (marker-buffer marker) (current-buffer))))
+          (switch-to-buffer (or (marker-buffer marker)
+                                (error "The marked buffer has been deleted")))
+          (goto-char (marker-position marker))
+          (set-marker marker nil nil)
+          (overlay-put ov 'pop-tag-marker nil)
+          (setq used-pop-tag-marker t))))
+    (unless used-pop-tag-marker
+      (let* ((loc (go-back-make-location)))
+        (case last-command
+          ('go-back-prev
            (go-back-shift :right)
+           (go-back-go (car (last go-back-past)))
            (setq go-back-current (car (last go-back-past)))
-           (go-back-go go-back-current)
-           (setq go-back-before invoke-location))
-         (when (eq go-back-current (car go-back-future))
-           (go-back-shift :left))
-         (go-back-push loc :right)
-         (setq go-back-current (car (last go-back-past))))
-       ))))
+           )
+          ('go-back-next
+           (go-back-go (car (last go-back-past)))
+           (setq go-back-current (car (last go-back-past)))
+           )
+          (t
+           (let ((invoke-location (go-back-make-location)))
+             (go-back-go go-back-current)
+             (setq go-back-before invoke-location)
+             (when (= (point) (nth 1 invoke-location))
+               (go-back-shift :right)
+               (setq go-back-current (car (last go-back-past)))
+               (go-back-go go-back-current)
+               (setq go-back-before invoke-location))
+             (when (eq go-back-current (car go-back-future))
+               (go-back-shift :left))
+             (go-back-push loc :right)
+             (setq go-back-current (car (last go-back-past))))
+           ))))))
 
 ;; blah
 
