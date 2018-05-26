@@ -116,7 +116,7 @@
         ))))
 
 (defun go-back-go (loc)
-  (flet ((line-to-re (line)
+  (cl-flet ((line-to-re (line)
                      (when line
                        (let ((words (remove-if 'go-back-ignore-word-p
                                                (split-string line " " t)))
@@ -538,10 +538,10 @@
                 (eq tc 'go-back-push)
                 (eq tc 'go-back-pre-command-trigger))
       (loop for ys in go-back-trigger-command-symbols
-            until (when (some 'identity (mapcar (apply-partially 'eq tc) ys))
+            until (when (cl-some (lambda (yc) (eq tc yc)) ys)
                     (setq triggered `(command ,ys))))
       (when triggered
-        (unless (some 'identity (mapcar (apply-partially 'eq lc) (second triggered)))
+        (unless (cl-some (lambda (yc) (eq lc yc)) (second triggered))
           (unless (or (eq lc 'go-back-next)
                       (eq lc 'go-back-prev)
                       (eq lc 'go-back-push))
