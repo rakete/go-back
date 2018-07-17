@@ -477,15 +477,16 @@
                                            ;;previous-line
                                            )
                                           (save-buffer
-                                           lazor/save-buffer
+                                           rakete:save-buffer
                                            switch-to-buffer
                                            ido-switch-buffer
-                                           lazor/save-window-excursion-buffer)
+                                           rakete:save-window-excursion-buffer
+                                           rakete:highlight-symbol)
                                           (eval-defun
                                            eval-last-sexp
                                            eval-buffer
                                            eval-region
-                                           lazor/eval-region-or-defun
+                                           rakete:eval-region-or-defun
                                            compile
                                            lazy-compile)
                                           (lazy-jump-definition
