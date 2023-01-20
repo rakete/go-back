@@ -45,7 +45,7 @@
 ;; do :       4 3 2 5 6 1
 ;;                   +*
 
-(require 'cl)
+(require 'cl-lib)
 
 (defvar go-back-past '())
 (make-variable-buffer-local 'go-back-past)
@@ -82,7 +82,7 @@
   (save-excursion
     (beginning-of-line)
     (or (looking-at "^\\s-*$")
-        (= (length (remove-if (lambda (w) (go-back-ignore-word-p w min-length))
+        (= (length (cl-remove-if (lambda (w) (go-back-ignore-word-p w min-length))
                               (split-string (buffer-substring-no-properties (point-at-bol) (point-at-eol)) " " t))) 0))))
 
 (defun go-back-previous-line ()
@@ -118,7 +118,7 @@
 (defun go-back-go (loc)
   (cl-flet ((line-to-re (line)
                      (when line
-                       (let ((words (remove-if 'go-back-ignore-word-p
+                       (let ((words (cl-remove-if 'go-back-ignore-word-p
                                                (split-string line " " t)))
                              (res '()))
                          (while words
@@ -162,7 +162,7 @@
               (save-excursion
                 (let ((matches-1 (save-excursion
                                    (remove-duplicates
-                                    (loop for w1 in words-1
+                                    (cl-loop for w1 in words-1
                                           if (string-equal w1 "#bobp#")
                                           collect '(0)
                                           else
@@ -172,11 +172,11 @@
                                           if (string-match ".*[a-zA-Z0-9]+.*" w1)
                                           do (goto-char (point-min))
                                           and
-                                          collect (loop while (re-search-forward w1 nil t)
+                                          collect (cl-loop while (re-search-forward w1 nil t)
                                                         collect (point-at-bol))))))
                       (matches-2 (save-excursion
                                    (remove-duplicates
-                                    (loop for w2 in words-2
+                                    (cl-loop for w2 in words-2
                                           if (string-equal w2 "#bobp#")
                                           collect '(0)
                                           else
@@ -186,12 +186,12 @@
                                           if (string-match ".*[a-zA-Z0-9]+.*" w2)
                                           do (goto-char (point-min))
                                           and
-                                          collect (loop while (re-search-forward w2 nil t)
+                                          collect (cl-loop while (re-search-forward w2 nil t)
                                                         collect (save-excursion (go-back-previous-line)
                                                                                 (point-at-bol)))))))
                       (matches-3 (save-excursion
                                    (remove-duplicates
-                                    (loop for w3 in words-3
+                                    (cl-loop for w3 in words-3
                                           if (string-equal w3 "#bobp#")
                                           collect '(0)
                                           else
@@ -201,7 +201,7 @@
                                           if (string-match ".*[a-zA-Z0-9]+.*" w3)
                                           do (goto-char (point-min))
                                           and
-                                          collect (loop while (re-search-forward w3 nil t)
+                                          collect (cl-loop while (re-search-forward w3 nil t)
                                                         collect (save-excursion (go-back-next-line)
                                                                                 (point-at-bol))))))))
                   (let* ((all-matches (sort (append (apply 'append matches-1)
@@ -300,9 +300,9 @@
                      (mapconcat #'prin1-to-string (mapcar #'second r) ",")
                      "] cost: " (prin1-to-string go-back-last-jump-cost)))))
 
-(defun* go-back-shift (&optional (direction :left))
+(cl-defun go-back-shift (&optional (direction :left))
   (interactive)
-  (case direction
+  (cl-case direction
     (:right
      (when (car (last go-back-past))
        (add-to-list 'go-back-future (car (last go-back-past)))
@@ -330,26 +330,26 @@
       (and (equal (nth 0 a) (nth 0 b))
            (= (nth 1 a) (nth 1 b)))))
 
-(defun* go-back-push (&optional loc (direction :left))
+(cl-defun go-back-push (&optional loc (direction :left))
   (interactive)
   (push-mark)
   (unless loc
     (setq loc (go-back-make-location)))
-  (case direction
+  (cl-case direction
     (:right
-     (setq go-back-future (remove-if (lambda (x) (go-back-loc-equal x loc)) go-back-future))
+     (setq go-back-future (cl-remove-if (lambda (x) (go-back-loc-equal x loc)) go-back-future))
      (add-to-list 'go-back-future loc nil 'go-back-loc-equal)
      (add-to-list 'go-back-history `(insert ,direction))
      (setq go-back-current loc))
     (:left
-     (setq go-back-past (remove-if (lambda (x) (go-back-loc-equal x loc)) go-back-past))
+     (setq go-back-past (cl-remove-if (lambda (x) (go-back-loc-equal x loc)) go-back-past))
      (add-to-list 'go-back-past loc t 'go-back-loc-equal)
      (add-to-list 'go-back-history `(insert ,direction))
      (setq go-back-current loc))))
 
-(defun* go-back-remove (&optional (direction :left))
+(cl-defun go-back-remove (&optional (direction :left))
   (interactive)
-  (case direction
+  (cl-case direction
     (:right
      (when go-back-future
        (add-to-list 'go-back-history `(remove ,direction ,(car go-back-future)))
@@ -378,7 +378,7 @@
           (setq used-pop-tag-marker t))))
     (unless used-pop-tag-marker
       (let* ((loc (go-back-make-location)))
-        (case last-command
+        (cl-case last-command
           ('go-back-prev
            (go-back-shift :right)
            (go-back-go (car (last go-back-past)))
@@ -412,7 +412,7 @@
 (defun go-back-next ()
   (interactive)
   (let* ((loc (go-back-make-location)))
-    (case last-command
+    (cl-case last-command
       ('go-back-next
        (go-back-shift :left)
        (go-back-go (car go-back-future))
@@ -538,7 +538,7 @@
                 (eq tc 'go-back-prev)
                 (eq tc 'go-back-push)
                 (eq tc 'go-back-pre-command-trigger))
-      (loop for ys in go-back-trigger-command-symbols
+      (cl-loop for ys in go-back-trigger-command-symbols
             until (when (cl-some (lambda (yc) (eq tc yc)) ys)
                     (setq triggered `(command ,ys))))
       (when triggered
