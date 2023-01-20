@@ -161,7 +161,7 @@
         (setq final-point
               (save-excursion
                 (let ((matches-1 (save-excursion
-                                   (remove-duplicates
+                                   (cl-remove-duplicates
                                     (cl-loop for w1 in words-1
                                           if (string-equal w1 "#bobp#")
                                           collect '(0)
@@ -175,7 +175,7 @@
                                           collect (cl-loop while (re-search-forward w1 nil t)
                                                         collect (point-at-bol))))))
                       (matches-2 (save-excursion
-                                   (remove-duplicates
+                                   (cl-remove-duplicates
                                     (cl-loop for w2 in words-2
                                           if (string-equal w2 "#bobp#")
                                           collect '(0)
@@ -190,7 +190,7 @@
                                                         collect (save-excursion (go-back-previous-line)
                                                                                 (point-at-bol)))))))
                       (matches-3 (save-excursion
-                                   (remove-duplicates
+                                   (cl-remove-duplicates
                                     (cl-loop for w3 in words-3
                                           if (string-equal w3 "#bobp#")
                                           collect '(0)
@@ -216,7 +216,7 @@
                          (closest-diff nil)
                          (closest-match nil))
                     (when all-matches
-                      (dolist (current-match all-matches)
+                      (cl-dolist (current-match all-matches)
                         (if (eq current-match last-match)
                             (setq counter (1+ counter))
                           (when (eq counter longest-counter)
@@ -226,7 +226,7 @@
                                   longest-matches `(,last-match)))
                           (setq last-match current-match
                                 counter 1)))
-                      (dolist (current-match longest-matches)
+                      (cl-dolist (current-match longest-matches)
                         (when (or (not closest-match)
                                   (< (abs (- p current-match)) closest-diff))
                           (setq closest-diff (abs (- p current-match))
@@ -366,7 +366,7 @@
 (defun go-back-prev ()
   (interactive)
   (let ((used-pop-tag-marker nil))
-    (dolist (ov (overlays-at (point)))
+    (cl-dolist (ov (overlays-at (point)))
       (let ((marker (overlay-get ov 'pop-tag-marker)))
         (when (and marker
                    (not (eq (marker-buffer marker) (current-buffer))))
@@ -549,7 +549,7 @@
             (when (buffer-file-name (current-buffer))
               (setq pushed (go-back-push))))))
       (unless pushed
-        (dolist (ov (overlays-at (point)))
+        (cl-dolist (ov (overlays-at (point)))
           (unless (overlay-get ov 'go-back-to)
             (when (eq (overlay-get ov 'jump-highlight) 'view)
               (overlay-put ov 'go-back-to t)
