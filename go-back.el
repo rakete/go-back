@@ -75,7 +75,7 @@
 (defun go-back-ignore-word-p (w &optional min-length)
   (and (< (length (substring-no-properties w)) (or min-length 2))
        (< (let ((hs (make-hash-table)))
-            (mapcar (lambda (c) (puthash c 'found hs)) w)
+            (mapc (lambda (c) (puthash c 'found hs)) w)
             (hash-table-count hs)) 3)))
 
 (defun go-back-ignore-line-p (&optional min-length)
@@ -88,7 +88,7 @@
 (defun go-back-previous-line ()
   (interactive)
   (unless (save-excursion (beginning-of-line) (bobp))
-    (previous-line)
+    (forward-line -1)
     (let ((direction 'up))
       (while (go-back-ignore-line-p)
         (when (save-excursion
@@ -96,14 +96,14 @@
                 (bobp))
           (setq direction 'down))
         (if (eq direction 'up)
-            (previous-line)
-          (next-line))
+            (forward-line -1)
+          (forward-line))
         ))))
 
 (defun go-back-next-line ()
   (interactive)
   (unless (save-excursion (end-of-line) (eobp))
-    (next-line)
+    (forward-line)
     (let ((direction 'down))
       (while (go-back-ignore-line-p)
         (when (save-excursion
@@ -111,8 +111,8 @@
                 (eobp))
           (setq direction 'up))
         (if (eq direction 'down)
-            (next-line)
-          (previous-line))
+            (forward-line)
+          (forward-line -1))
         ))))
 
 (defun go-back-go (loc)
@@ -291,13 +291,13 @@
   (let ((l go-back-past)
         (r go-back-future))
     (message (concat "["
-                     (mapconcat #'prin1-to-string (mapcar #'second l) ",")
+                     (mapconcat #'prin1-to-string (mapcar #'cl-second l) ",")
                      "],"
-                     (prin1-to-string (second go-back-current))
+                     (prin1-to-string (cl-second go-back-current))
                      ","
-                     (prin1-to-string (second go-back-before))
+                     (prin1-to-string (cl-second go-back-before))
                      ",["
-                     (mapconcat #'prin1-to-string (mapcar #'second r) ",")
+                     (mapconcat #'prin1-to-string (mapcar #'cl-second r) ",")
                      "] cost: " (prin1-to-string go-back-last-jump-cost)))))
 
 (cl-defun go-back-shift (&optional (direction :left))
@@ -318,7 +318,7 @@
        (add-to-list 'go-back-history `(shift ,direction))
        (setq go-back-future (cdr go-back-future))
        (when (null go-back-future)
-         (setq go-back-future (list (first go-back-past))
+         (setq go-back-future (list (cl-first go-back-past))
                go-back-past (cdr go-back-past))))
      (setq go-back-current (car go-back-future)))
     ))
@@ -539,10 +539,10 @@
                 (eq tc 'go-back-push)
                 (eq tc 'go-back-pre-command-trigger))
       (cl-loop for ys in go-back-trigger-command-symbols
-            until (when (cl-some (lambda (yc) (eq tc yc)) ys)
-                    (setq triggered `(command ,ys))))
+               until (when (cl-some (lambda (yc) (eq tc yc)) ys)
+                       (setq triggered `(command ,ys))))
       (when triggered
-        (unless (cl-some (lambda (yc) (eq lc yc)) (second triggered))
+        (unless (cl-some (lambda (yc) (eq lc yc)) (cl-second triggered))
           (unless (or (eq lc 'go-back-next)
                       (eq lc 'go-back-prev)
                       (eq lc 'go-back-push))
@@ -558,6 +558,6 @@
 (eval-after-load "go-back"
   '(progn
      ;;(kill-local-variable 'pre-command-hook)
-     (add-hook 'pre-command-hook 'go-back-pre-command-trigger t nil)))
+     (add-hook 'pre-command-hook 'go-back-pre-command-trigger)))
 
 (provide 'go-back)
