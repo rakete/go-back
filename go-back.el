@@ -379,12 +379,12 @@
     (unless used-pop-tag-marker
       (let* ((loc (go-back-make-location)))
         (cl-case last-command
-          ('go-back-prev
+          (go-back-prev
            (go-back-shift :right)
            (go-back-go (car (last go-back-past)))
            (setq go-back-current (car (last go-back-past)))
            )
-          ('go-back-next
+          (go-back-next
            (go-back-go (car (last go-back-past)))
            (setq go-back-current (car (last go-back-past)))
            )
@@ -413,12 +413,12 @@
   (interactive)
   (let* ((loc (go-back-make-location)))
     (cl-case last-command
-      ('go-back-next
+      (go-back-next
        (go-back-shift :left)
        (go-back-go (car go-back-future))
        (setq go-back-current (car go-back-future))
        )
-      ('go-back-prev
+      (go-back-prev
        (go-back-go (car go-back-future))
        (setq go-back-current (car go-back-future))
        )
